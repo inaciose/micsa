@@ -34,7 +34,8 @@ LiquidCrystal_PCF8574 lcd(0x27);
 const int LED_PIN = 13;
 const int DOOR_SWITCH_PIN = 12;
 
-int PIN_CODE = 0;
+char pin_code[6] = {'0', '0', '0', '0', '0', '0'};
+short unsigned int number_of_tries = 3;
 
 /*
 // Main
@@ -76,7 +77,7 @@ State state = V_IDLE;
 
 void loop() {
   switch (state) {
-    case V_IDLE:
+    case V_IDLE: {
       // Wait for a card to be scanned. If a valid card is
       // scanned, go to V_AUTH state and set the auth_destination
       // to 0 (V_OPENED) or 1 (V_CONFIG) depending on the card.
@@ -129,29 +130,63 @@ void loop() {
         }
       }
       break;
-    case V_AUTH:
+    }
+    case V_AUTH: {
       // Wait for a valid PIN to be entered
       // If a valid PIN is entered, go to V_OPENED state
       // If an invalid PIN is entered, go to V_ALARM state
-
-      lcd.clear();
-      lcd.setBacklight(255);
-      lcd.setCursor(0, 0);
-      lcd.print("   ENTER PIN:   ");
-      lcd.print("     ------     ");
-
-      while (1)
+      
+      unsigned short int i = 0;
+      for (; i < number_of_tries; i++)
       {
-        char key = keypad.getKey();
-        if (key != NO_KEY)
+        lcd.clear();
+        lcd.setBacklight(255);
+        lcd.setCursor(0, 0);
+        lcd.print("   ENTER PIN:   ");
+        lcd.setCursor(0, 1);
+        lcd.print("     ------     ");
+
+        char entered_pin_code[6] = {'#', '#', '#', '#', '#', '#'};
+
+        for(int j = 0; j < 6;)
         {
-          // Handle key press
+          char key = keypad.getKey();
+          if (key != NO_KEY)
+          {
+            entered_pin_code[j] = key;
+            lcd.setCursor(5 + j, 1);
+            lcd.print(key);
+            j++;
+          }
         }
-        delay(1);
+        delay(700);
+        Serial.write(entered_pin_code);
+        Serial.write("/n");
+        Serial.write(pin_code);
+        if (!strncmp(entered_pin_code, pin_code, 6)) {
+          break;
+        }
       }
 
+       if (i >= number_of_tries)
+       {
+         state = V_ALARM;
+       }
+       else
+       {
+         if (auth_destination == 0)
+         {
+           state = V_OPENED;
+         }
+         else
+         {
+           state = V_CONFIG;
+         }
+       }
+      
       break;
-    case V_ALARM:
+    }
+    case V_ALARM: {
       // Activate the buzzer and the LED while asking for a PIN
       // If a valid PIN is entered, go to V_IDLE state
       // If an invalid PIN is entered, go to V_ALARM state
@@ -169,11 +204,13 @@ void loop() {
       }
 
       break;
-    case V_OPENED:
+    }
+    case V_OPENED: {
       // Open the door and wait for the switch to be closed
       // If the switch is closed, go to V_IDLE state
       break;
-    case V_CONFIG:
+    }
+    case V_CONFIG: {
       // Configure the system
       // If the switch is closed, go to V_IDLE state
 
@@ -189,5 +226,6 @@ void loop() {
       }
 
       break;
+    }
   }  // switch (state)  
 }  // loop()
