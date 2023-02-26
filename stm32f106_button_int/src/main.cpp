@@ -1,44 +1,21 @@
 #include <Arduino.h>
 
-int ledPin = PC13;
-int buttonPin = PA0;
-int ledToggle;
-int previousState = HIGH;
-unsigned int previousPress = 0;
-volatile int buttonFlag;
-int buttonDebounce = 20;
+#define LED_PIN1 PC13
+#define BUTTON_PIN1 PA0
 
-
-void button_ISR()
-{
-  buttonFlag = 1;
-}
-
+int buttonState1;
 
 void setup()
 
 {
-  pinMode(ledPin, OUTPUT);
-  pinMode(buttonPin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), button_ISR, CHANGE);
+  pinMode(LED_PIN1, OUTPUT);
+  pinMode(BUTTON_PIN1, INPUT);
+
 }
-
-
 
 void loop()
 {
-  if((millis() - previousPress) > buttonDebounce && buttonFlag)
-  {
-    previousPress = millis();
-    if(digitalRead(buttonPin) == LOW && previousState == HIGH)
-    {
-      ledToggle =! ledToggle;
-      digitalWrite(ledPin, ledToggle);
-      previousState = LOW;
-    } else if (digitalRead(buttonPin) == HIGH && previousState == LOW)
-    {
-      previousState = HIGH;
-    }
-    buttonFlag = 0;
-  }
+  // pooling no debounce
+  buttonState1 = digitalRead(BUTTON_PIN1);
+  digitalWrite(LED_PIN1, buttonState1);
 }
