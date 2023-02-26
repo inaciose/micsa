@@ -31,11 +31,49 @@ LiquidCrystal_PCF8574 lcd(0x27);
 // Other
 */
 
-const int LED_PIN = 13;
+const int RED_LED_PIN = 13;
 const int DOOR_SWITCH_PIN = 12;
+const int BUZZER_PIN = 11;
+const int GREEN_LED_PIN = 10;
 
 char pin_code[6] = {'0', '0', '0', '0', '0', '0'};
 short unsigned int number_of_tries = 3;
+
+// State machine with 5 main states: V_IDLE, V_AUTH, V_ALARM,
+// V_OPENED, V_CONFIG
+
+// V_IDLE: Waiting for a card to be scanned
+// V_AUTH: Waiting for a valid PIN to be entered
+// V_ALARM: Activate the buzzer and the LED while asking for a PIN
+// V_OPENED: Open the door and wait for the switch to be closed
+// V_CONFIG: Configure the system
+
+enum State { V_IDLE, V_AUTH, V_ALARM, V_OPENED, V_CONFIG };
+int auth_destination = 0; // 0: OPENED, 1: CONFIG
+State state = V_IDLE;
+
+/*
+// Functions
+*/
+
+void read_pin_code(char* entered_pin_code) {
+  lcd.setBacklight(255);
+  lcd.setCursor(0, 1);
+  lcd.print("     ------     ");
+  
+  for(int i = 0; i < 6;)
+  {
+    char key = keypad.getKey();
+    if (key != NO_KEY)
+    {
+      entered_pin_code[i] = key;
+      lcd.setCursor(5 + i, 1);
+      lcd.print(key);
+      i++;
+    }
+    if (digitalRead(DOOR_SWITCH_PIN) == LOW) {state = V_ALARM; break;}
+  }
+}
 
 /*
 // Main
@@ -55,25 +93,13 @@ void setup() {
   lcd.begin(16, 2);
 
   // Others
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(RED_LED_PIN, OUTPUT);
   pinMode(DOOR_SWITCH_PIN, INPUT_PULLUP);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(GREEN_LED_PIN, OUTPUT);
 
   Serial.println("Status: Setup complete");
 }  // setup()
-
-
-// State machine with 5 main states: V_IDLE, V_AUTH, V_ALARM,
-// V_OPENED, V_CONFIG
-
-// V_IDLE: Waiting for a card to be scanned
-// V_AUTH: Waiting for a valid PIN to be entered
-// V_ALARM: Activate the buzzer and the LED while asking for a PIN
-// V_OPENED: Open the door and wait for the switch to be closed
-// V_CONFIG: Configure the system
-
-enum State { V_IDLE, V_AUTH, V_ALARM, V_OPENED, V_CONFIG };
-int auth_destination = 0; // 0: OPENED, 1: CONFIG
-State state = V_IDLE;
 
 void loop() {
   switch (state) {
@@ -143,48 +169,16 @@ void loop() {
         lcd.setBacklight(255);
         lcd.setCursor(0, 0);
         lcd.print("   ENTER PIN:   ");
-        lcd.setCursor(0, 1);
-        lcd.print("     ------     ");
+        
+        char entered_pin_code[6];
+        read_pin_code(entered_pin_code);
 
-        char entered_pin_code[6] = {'#', '#', '#', '#', '#', '#'};
-
-        for(int j = 0; j < 6;)
-        {
-          char key = keypad.getKey();
-          if (key != NO_KEY)
-          {
-            entered_pin_code[j] = key;
-            lcd.setCursor(5 + j, 1);
-            lcd.print(key);
-            j++;
-          }
-        }
-        delay(700);
-        Serial.write(entered_pin_code);
-        Serial.write("/n");
-        Serial.write(pin_code);
-        if (!strncmp(entered_pin_code, pin_code, 6)) {
-          break;
-        }
+        if (!strncmp(entered_pin_code, pin_code, 6)) { break; }
       }
 
-       if (i >= number_of_tries)
-       {
-         state = V_ALARM;
-       }
-       else
-       {
-         if (auth_destination == 0)
-         {
-           state = V_OPENED;
-         }
-         else
-         {
-           state = V_CONFIG;
-         }
-       }
-      
-      break;
+      if (i >= number_of_tries) { state = V_ALARM; break;}
+      if (auth_destination) { state = V_CONFIG; break; }
+      state = V_OPENED; break;
     }
     case V_ALARM: {
       // Activate the buzzer and the LED while asking for a PIN
@@ -195,12 +189,14 @@ void loop() {
       lcd.setBacklight(255);
       lcd.setCursor(0, 0);
       lcd.print("ALARM");
-      digitalWrite(LED_PIN, HIGH);
+      digitalWrite(RED_LED_PIN, HIGH);
 
       while (1)
       {
-        // TODO: buzzer and keypad code here
-        delay(1);
+        digitalWrite(BUZZER_PIN, HIGH);
+        delay(100);
+        digitalWrite(BUZZER_PIN, LOW);
+        delay(100);
       }
 
       break;
@@ -208,6 +204,31 @@ void loop() {
     case V_OPENED: {
       // Open the door and wait for the switch to be closed
       // If the switch is closed, go to V_IDLE state
+      
+      lcd.clear();
+      lcd.setBacklight(255);
+      lcd.setCursor(0, 0);
+      lcd.print("      DOOR      ");
+      lcd.setCursor(0, 1);
+      lcd.print("    UNLOCKED    ");
+      digitalWrite(GREEN_LED_PIN, HIGH);
+      // ROTATE SERVO
+      delay(5000);
+      while (1)
+      {
+        if (digitalRead(DOOR_SWITCH_PIN) == HIGH) {
+          // ROTATE SERVO
+          digitalWrite(GREEN_LED_PIN, LOW);
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print("      DOOR      ");
+          lcd.setCursor(0, 1);
+          lcd.print("     LOCKED     ");
+          delay(5000);
+          state = V_IDLE;
+          break;
+        }
+      }
       break;
     }
     case V_CONFIG: {
@@ -227,5 +248,5 @@ void loop() {
 
       break;
     }
-  }  // switch (state)  
+  }  // switch (state)
 }  // loop()
