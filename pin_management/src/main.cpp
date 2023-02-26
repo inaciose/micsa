@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <Keypad.h>
 #include <Arduino.h>
+#include <LiquidCrystal_PCF8574.h>
 
 /*
 // Keypad Configuration
@@ -21,6 +22,12 @@ byte pin_column[COLUMN_NUM] = {5, 4, 3};
 Keypad keypad = Keypad( makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM );
 
 /*
+// Display Configuration
+*/
+
+LiquidCrystal_PCF8574 lcd(0x27);
+
+/*
 // Other
 */
 
@@ -37,6 +44,12 @@ void setup() {
     ;
   Serial.println("Status: Serial connected");
 
+  // Setup display
+  Wire.begin();
+  Wire.beginTransmission(0x27);
+  Wire.endTransmission();
+  lcd.begin(16, 2);
+
   // Others
   pinMode(LED_PIN, OUTPUT);
 
@@ -45,12 +58,20 @@ void setup() {
 
 
 void loop() {
-  char key = keypad.getKey();
+  lcd.setBacklight(255);
+  lcd.home();
+  lcd.clear();
+  lcd.print("Hello LCD");
+  delay(1000);
+  while (1)
+  {
+    char key = keypad.getKey();
 
-  if (key){
-    Serial.println(key);
-    digitalWrite(LED_PIN, HIGH);
-    delay(5);
-    digitalWrite(LED_PIN, LOW);
+    if (key){
+      Serial.println(key);
+      digitalWrite(LED_PIN, HIGH);
+      delay(5);
+      digitalWrite(LED_PIN, LOW);
+    }
   }
 }  // loop()
