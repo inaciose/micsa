@@ -56,13 +56,14 @@ State state = V_IDLE;
 // Functions
 */
 
-void read_pin_code(char* entered_pin_code) {
+void read_pin_code(char* entered_pin_code, boolean in_alarm) {
   lcd.setBacklight(255);
   lcd.setCursor(0, 1);
   lcd.print("     ------     ");
   
   for(int i = 0; i < 6;)
   {
+    if (in_alarm) { digitalWrite(RED_LED_PIN, HIGH); digitalWrite(BUZZER_PIN, HIGH); }
     char key = keypad.getKey();
     if (key != NO_KEY)
     {
@@ -71,7 +72,8 @@ void read_pin_code(char* entered_pin_code) {
       lcd.print(key);
       i++;
     }
-    if (digitalRead(DOOR_SWITCH_PIN) == LOW) {state = V_ALARM; break;}
+    if (in_alarm) { delay(50); digitalWrite(RED_LED_PIN, LOW); digitalWrite(BUZZER_PIN, LOW); delay(50);}
+    if (digitalRead(DOOR_SWITCH_PIN) == LOW && !in_alarm) {state = V_ALARM; break;}
   }
 }
 
@@ -171,7 +173,7 @@ void loop() {
         lcd.print("   ENTER PIN:   ");
         
         char entered_pin_code[6];
-        read_pin_code(entered_pin_code);
+        read_pin_code(entered_pin_code, false);
 
         if (!strncmp(entered_pin_code, pin_code, 6)) { break; }
       }
@@ -188,17 +190,22 @@ void loop() {
       lcd.clear();
       lcd.setBacklight(255);
       lcd.setCursor(0, 0);
-      lcd.print("ALARM");
-      digitalWrite(RED_LED_PIN, HIGH);
-
-      while (1)
-      {
-        digitalWrite(BUZZER_PIN, HIGH);
-        delay(100);
-        digitalWrite(BUZZER_PIN, LOW);
-        delay(100);
+      lcd.print("     ALARM!     ");
+      
+      while (1) {
+        char entered_pin_code[6];
+        read_pin_code(entered_pin_code, true);
+        if (!strncmp(entered_pin_code, pin_code, 6)) { break; }
       }
 
+      digitalWrite(RED_LED_PIN, LOW);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("     ALARM      ");
+      lcd.setCursor(0, 1);
+      lcd.print("    DISABLED    ");
+      delay(5000);
+      state = V_IDLE;
       break;
     }
     case V_OPENED: {
@@ -233,7 +240,6 @@ void loop() {
     }
     case V_CONFIG: {
       // Configure the system
-      // If the switch is closed, go to V_IDLE state
 
       lcd.clear();
       lcd.setBacklight(255);
