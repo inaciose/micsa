@@ -7,7 +7,8 @@
 // Keypad Configuration
 */
 
-const int ROW_NUM = 4; const int COLUMN_NUM = 3;
+#define ROW_NUM 4
+#define COLUMN_NUM 3
 
 char keys[ROW_NUM][COLUMN_NUM] = {
   {'1','2','3'},
@@ -31,10 +32,10 @@ LiquidCrystal_PCF8574 lcd(0x27);
 // Other
 */
 
-const int RED_LED_PIN = 13;
-const int DOOR_SWITCH_PIN = 12;
-const int BUZZER_PIN = 11;
-const int GREEN_LED_PIN = 10;
+#define RED_LED_PIN 13
+#define DOOR_SWITCH_PIN 12
+#define BUZZER_PIN 11
+#define GREEN_LED_PIN 10
 
 char pin_code[6] = {'0', '0', '0', '0', '0', '0'};
 short unsigned int number_of_tries = 3;
@@ -106,25 +107,12 @@ void setup() {
 void loop() {
   switch (state) {
     case V_IDLE: {
-      // Wait for a card to be scanned. If a valid card is
-      // scanned, go to V_AUTH state and set the auth_destination
-      // to 0 (V_OPENED) or 1 (V_CONFIG) depending on the card.
-
-      // Listen for possible movments detected by the accelerometer.
-      // If a movement is detected, go to V_ALARM state.
-
-      // Listen if the switch is high (door open). If that appens,
-      // go to V_ALARM state.
-
-      // Note 1: the scanning module is not yet implemented
-      // so, for now, we will simulate a card scan by reading
-      // the serial port: opn (auth destination 0) or cfg
-      // (auth destination 1)
-
-      // Note 2: the accelerometer is not yet implemented
-      // so, for now, we will simulate a movement by reading
-      // the serial port: mov
-
+      /*
+      Wait for a card to be scanned. If a valid card is scanned, go to V_AUTH state and set the auth_destination to 0 (V_OPENED) or 1 (V_CONFIG) depending on the card. Listen for possible movments detected by the accelerometer. If a movement is detected, go to V_ALARM state. Listen if the switch is high (door open). If that appens, go to V_ALARM state.
+      
+      Note 1: the scanning module is not yet implemented so, for now, we will simulate a card scan by reading the serial port: opn (auth destination 0) or cfg (auth destination 1)
+      Note 2: the accelerometer is not yet implemented so, for now, we will simulate a movement by reading the serial port: mov
+      */
       lcd.clear();
       lcd.setBacklight(0);
 
