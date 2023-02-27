@@ -50,8 +50,11 @@ short unsigned int number_of_tries = 3;
 // V_CONFIG: Configure the system
 
 enum State { V_IDLE, V_AUTH, V_ALARM, V_OPENED, V_CONFIG };
+enum ConfigState { V_CHANGE_PIN, V_CHANGE_NUMBER_OF_TRIES, V_EXIT_CONFIG };
+
 int auth_destination = 0; // 0: OPENED, 1: CONFIG
 State state = V_IDLE;
+ConfigState config_state = V_CHANGE_PIN;
 
 /*
 // Functions
@@ -139,11 +142,7 @@ void loop() {
             break;
           }
         }
-        if (digitalRead(DOOR_SWITCH_PIN) == LOW)
-        {
-          state = V_ALARM;
-          break;
-        }
+        if (digitalRead(DOOR_SWITCH_PIN) == LOW) { state = V_ALARM; break; }
       }
       break;
     }
@@ -167,7 +166,18 @@ void loop() {
       }
 
       if (i >= number_of_tries) { state = V_ALARM; break;}
-      if (auth_destination) { state = V_CONFIG; break; }
+      if (auth_destination) {
+        lcd.clear();
+        lcd.setBacklight(255);
+        lcd.setCursor(0, 0);
+        lcd.print("    SETTINGS    ");
+        lcd.setCursor(0, 1);
+        lcd.print("      MENU      ");
+        delay(3000);
+        state = V_CONFIG;
+        config_state = V_CHANGE_PIN;
+        break;
+      }
       state = V_OPENED; break;
     }
     case V_ALARM: {
@@ -227,18 +237,105 @@ void loop() {
       break;
     }
     case V_CONFIG: {
-      // Configure the system
+      switch(config_state) {
+        case V_CHANGE_PIN: {
+          // Change the PIN
+          lcd.clear();
+          lcd.setBacklight(255);
+          lcd.setCursor(0, 0);
+          lcd.print("   CHANGE PIN   ");
+          lcd.setCursor(0, 1);
+          lcd.print("* OK      NEXT #");
 
-      lcd.clear();
-      lcd.setBacklight(255);
-      lcd.setCursor(0, 0);
-      lcd.print("CONFIG");
+          while (1) {
+            char key = keypad.getKey();
+            if (key == '#')
+            {
+              config_state = V_CHANGE_NUMBER_OF_TRIES;
+              break;
+            }
+            else if (key == '*')
+            {
+              lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("   ENTER PIN:   ");
+              read_pin_code(pin_code, false);
+              break;
+            }
+            if (digitalRead(DOOR_SWITCH_PIN) == LOW) { state = V_ALARM; break; }
+          }
+          break;
+        }
+        case V_CHANGE_NUMBER_OF_TRIES: {
+          // Change the number of tries
+          lcd.clear();
+          lcd.setBacklight(255);
+          lcd.setCursor(0, 0);
+          lcd.print("  CHANGE TRIES  ");
+          lcd.setCursor(0, 1);
+          lcd.print("* OK      NEXT #");
 
-      while (1)
-      {
-        // TODO: configs to do here
-        delay(1);
+          while (1) {
+            char key = keypad.getKey();
+            if (key == '#')
+            {
+              config_state = V_EXIT_CONFIG;
+              break;
+            }
+            else if (key == '*')
+            {
+              lcd.clear();
+              lcd.setCursor(0, 0);
+              lcd.print("ENTER N O TRIES:");
+              while (1)
+              {
+                delay(1);
+              }
+              break;
+            }
+            if (digitalRead(DOOR_SWITCH_PIN) == LOW) { state = V_ALARM; break; }
+          }
+          break;
+        }
+        case V_EXIT_CONFIG: {
+          // Exit the configuration menu
+          lcd.clear();
+          lcd.setBacklight(255);
+          lcd.setCursor(0, 0);
+          lcd.print("   EXIT CONFIG  ");
+          lcd.setCursor(0, 1);
+          lcd.print("* OK      NEXT #");
+
+          while (1) {
+            char key = keypad.getKey();
+            if (key == '#')
+            {
+              config_state = V_CHANGE_PIN;
+              break;
+            }
+            else if (key == '*')
+            {
+              lcd.clear();
+              lcd.setBacklight(255);
+              lcd.setCursor(0, 0);
+              lcd.print("    EXITING     ");
+              lcd.setCursor(0, 1);
+              lcd.print("    SETTINGS    ");
+              delay(3000);
+              state = V_IDLE;
+              break;
+            }
+            if (digitalRead(DOOR_SWITCH_PIN) == LOW) { state = V_ALARM; break; }
+          }
+          break;
+        }
+        if (digitalRead(DOOR_SWITCH_PIN) == LOW) { state = V_ALARM; break; }
       }
+
+      lcd.setCursor(0, 0);
+      lcd.print("   CHANGE PIN   ");
+      lcd.setCursor(0, 1);
+      lcd.print("* OK      NEXT #");
 
       break;
     }
