@@ -14,6 +14,10 @@
 int buttonState1;
 int buttonLastState1;
 
+// accel/gyro
+#include <MPU6050_tockn.h>
+long infoTimer = 0;
+
 // setup PWMServoDriver with I2C
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
@@ -43,6 +47,9 @@ void setup()
   // door sensor button setup 
   pinMode(BUTTON_PIN1, INPUT);
 
+  // accel / gyro
+  MPU6050 mpu6050(Wire);
+
  // initialize PCA9685
   Serial.println("initialize PCA9685");
   pwm.begin();
@@ -52,13 +59,38 @@ void setup()
   pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
   //Serial.println("pwm.setPWMFreq");
   delay(10);
- 
+
 }
 
 
 void loop()
 {
   
+  mpu6050.update();
+
+  if(millis() - timer > 1000){
+    
+    Serial.print(mpu6050.getAccX());
+    Serial.print('\t');
+
+    Serial.print(mpu6050.getAccY());
+    Serial.print('\t');
+
+    Serial.print(mpu6050.getAccZ());
+    Serial.print('\t');
+
+    Serial.print(mpu6050.getGyroX());
+    Serial.print('\t');
+
+    Serial.print(mpu6050.getGyroY());
+    Serial.print('\t');
+
+    Serial.println(mpu6050.getGyroZ());
+
+    timer = millis();
+    
+  }
+
 
   // door sensor reading pooling no debounce
   buttonState1 = digitalRead(BUTTON_PIN1);
