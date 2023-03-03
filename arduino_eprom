@@ -1,0 +1,72 @@
+// ATmega328 (Arduino Uno, Nano, Mini)	EPROM 1024 bytes
+
+#include <Arduino.h>
+
+#include <EEPROM.h>
+
+#define EPROM_BASE_PIN_CODE 0
+#define EPROM_PIN_CODE_BYTES 6
+#define EPROM_PIN_CODE_TRIES 6
+
+
+char pin_code[6];
+byte pin_tries;
+
+void loaded_stored_values(void) {
+  // using globals 
+  // loaded stored pin code
+  for(int f=0; f<EPROM_PIN_CODE_BYTES; f++ ) {
+    pin_code[f] = EEPROM.read(EPROM_BASE_PIN_CODE + f);
+  }
+
+  // loaded stored pin tries
+  pin_tries = EEPROM.read(EPROM_PIN_CODE_TRIES);
+
+}
+
+void update_stored_values(void) {
+  // using globals 
+  // loaded stored pin code
+  for(int f=0; f<EPROM_PIN_CODE_BYTES; f++ ) {
+    EEPROM.update(EPROM_BASE_PIN_CODE + f, pin_code[f]);
+  }
+
+  // loaded stored pin tries
+  EEPROM.update(EPROM_PIN_CODE_TRIES, pin_tries);
+
+}
+
+void setup() {
+
+  Serial.begin(9600);
+
+/*
+  pin_code[0] = '5';
+  pin_code[1] = '5';
+  pin_code[2] = '4';
+  pin_code[3] = '4';
+  pin_code[4] = '2';
+  pin_code[5] = '2';
+
+  pin_tries = 5;
+
+
+  update_stored_values();
+*/
+  loaded_stored_values();
+  
+}
+
+void loop() {
+
+
+  for(int f=0; f<EPROM_PIN_CODE_BYTES; f++ ) {  
+    Serial.print(pin_code[f]);
+  }
+
+  Serial.print(" ");
+  Serial.print(pin_tries);
+  Serial.println("");
+  delay(1000);
+
+}
