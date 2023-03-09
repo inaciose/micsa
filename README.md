@@ -1,3 +1,3 @@
 # micsa
 
-Iracema Micsa
+Repositorio com codigo testado para varios sensores individualmente.
